@@ -25,7 +25,7 @@ hasProcessingProvider=no
 # Uncomment the following line and add your changelog:
 changelog= 
 	* 1.0
-		plugin released with 99.9% of excpected funcionality
+		plugin released with 99.9 prc of excpected funcionality
 
 # Tags are comma separated with spaces allowed
 tags=python, filering, filter, filtr, selection, select, selecting, sql, expresion
