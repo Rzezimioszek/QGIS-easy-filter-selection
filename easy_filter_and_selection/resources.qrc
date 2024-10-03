@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/plugins/easy_filter_and_selection" >
+		<file>icons/ico32.png</file>
+        <file>icons/ico32.jpg</file>
+		<file>icons/ico256.jpg</file>
+    </qresource>
+</RCC>

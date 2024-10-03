@@ -1,0 +1,52 @@
+# This file contains metadata for your plugin.
+
+# This file should be included when you package your plugin.# Mandatory items:
+
+[general]
+name=Easy Filter and Selection
+qgisMinimumVersion=3.0
+description=Plugin gives easy selecting and filter feature for users that don't want writes comlicated SQL for simple problem solution.
+version=1.0
+author=Łukasz Świątek
+email=lukasz.swiatek1996@gmail.com
+
+about= 
+	EN: With plugin you can easy select layer and field in layer and than just paste list of selecting/filtering features from excel or txt list where feature are separeted by new line, now click button and enjoy job done without manual writing long SQL expresion to simple select object from list.
+	
+	PL: Z pluginem łatwo wybierzesz warstwe, pole z warstwy i wkleisz liste z excel lub pliku txt, gdzie elementy są rozdzielane nową linią, teraz klikasz przycisk i ciesz się wykonaną pracą bez pisania długiego wyrażenia sql do wykonania prostej selecji obiektów z listy.
+
+tracker=https://github.com/Rzezimioszek/QGIS-easy-filter-selection/issues
+repository=https://github.com/Rzezimioszek/QGIS-easy-filter-selection
+# End of mandatory metadata
+
+# Recommended items:
+
+hasProcessingProvider=no
+# Uncomment the following line and add your changelog:
+changelog= 
+	* 1.0
+		plugin released with 99.9% of excpected funcionality
+
+# Tags are comma separated with spaces allowed
+tags=python, filering, filter, filtr, selection, select, selecting, sql, expresion
+
+homepage=http://github.com/Rzezimioszek
+category=Plugins
+icon=icon.png
+# experimental flag
+experimental=False
+
+# deprecated flag (applies to the whole plugin, not just a single version)
+deprecated=False
+
+# Since QGIS 3.8, a comma separated list of plugins to be installed
+# (or upgraded) can be specified.
+# Check the documentation for more information.
+# plugin_dependencies=
+
+Category of the plugin: Raster, Vector, Database or Web
+# category=
+
+# If the plugin can run on QGIS Server.
+server=False
+
