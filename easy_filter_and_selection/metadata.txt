@@ -6,14 +6,16 @@
 name=Easy Filter and Selection
 qgisMinimumVersion=3.0
 description=Plugin gives easy selecting and filter feature for users that don't want writes comlicated SQL for simple problem solution.
-version=1.0
+version=1.1
 author=Łukasz Świątek
 email=lukasz.swiatek1996@gmail.com
 
 about= 
 	EN: With plugin you can easy select layer and field in layer and than just paste list of selecting/filtering features from excel or txt list where feature are separeted by new line, now click button and enjoy job done without manual writing long SQL expresion to simple select object from list.
+	Other feature: select/filter duplicates/nonduplicates by Layer and Field
 	
 	PL: Z pluginem łatwo wybierzesz warstwe, pole z warstwy i wkleisz liste z excel lub pliku txt, gdzie elementy są rozdzielane nową linią, teraz klikasz przycisk i ciesz się wykonaną pracą bez pisania długiego wyrażenia sql do wykonania prostej selecji obiektów z listy.
+	Inny feature: selekcja/filtr duplików/nieduplikatów na podstaiwe Warstwy i pola.
 
 tracker=https://github.com/Rzezimioszek/QGIS-easy-filter-selection/issues
 repository=https://github.com/Rzezimioszek/QGIS-easy-filter-selection
@@ -23,9 +25,13 @@ repository=https://github.com/Rzezimioszek/QGIS-easy-filter-selection
 
 hasProcessingProvider=no
 # Uncomment the following line and add your changelog:
-changelog= 
+changelog=
+	* 1.1
+		- Select/Filter duplicates/non duplicates feature
+		- Clear values button
+		- bugfixes
 	* 1.0
-		plugin released with 99.9 prc of excpected funcionality
+		- plugin released with 99.9 prc of excpected funcionality
 
 # Tags are comma separated with spaces allowed
 tags=python, filering, filter, filtr, selection, select, selecting, sql, expresion

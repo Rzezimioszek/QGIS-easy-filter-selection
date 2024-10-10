@@ -24,7 +24,7 @@
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
-from qgis.core import QgsProject, Qgis, QgsVectorFileWriter
+from qgis.core import QgsProject, Qgis, QgsVectorFileWriter, QgsAggregateCalculator
 # Initialize Qt resources from file resources.py
 from .resources import *
 
@@ -232,7 +232,21 @@ class EasyFilter:
                 self.dockwidget.listWidget_2.addItem(item);
         else:
             self.dockwidget.listWidget_2.clear()
+        
+    def check_lists(self):
+    
+        if len(self.dockwidget.listWidget.selectedItems()) < 1:
+        
+            self.iface.messageBar().pushMessage("Can't be done:", "Select layer first.", level=Qgis.Warning, duration=30)
+            return False
             
+        if len(self.dockwidget.listWidget_2.selectedItems()) < 1:
+        
+            self.iface.messageBar().pushMessage("Can't be done:", "Select field first.", level=Qgis.Warning, duration=30)
+            return False
+            
+        return True
+    
             
     def sql_from_textEdit(self, selection=True, reverse=False):
     
@@ -242,31 +256,20 @@ class EasyFilter:
             self.iface.messageBar().pushMessage("Can't be done:", "Insert values first.", level=Qgis.Warning, duration=30)
             return
             
-        if len(self.dockwidget.listWidget.selectedItems()) < 1:
-        
-            self.iface.messageBar().pushMessage("Can't be done:", "Select layer first.", level=Qgis.Warning, duration=30)
-            return
-            
-        if len(self.dockwidget.listWidget_2.selectedItems()) < 1:
-        
-            self.iface.messageBar().pushMessage("Can't be done:", "Select field first.", level=Qgis.Warning, duration=30)
+        if not self.check_lists():
             return
          
         
         field = self.dockwidget.listWidget_2.selectedItems()[0].text()
-        
         splt = value.split("\n")
         
         if reverse:
             result = f'"{field}" not in ('
-        
         else:
             result = f'"{field}" in ('
             
-            
         numeric_field = self.dockwidget.checkBoxNumeric.isChecked() 
-       
-            
+
         if numeric_field:
             for s in splt:
                 result = result + f"{s}, "
@@ -276,21 +279,15 @@ class EasyFilter:
             
         result = result[:-2] + ")"
         
-
-            
-            
         layers = QgsProject.instance().mapLayersByName(self.dockwidget.listWidget.selectedItems()[0].text())
         layer = layers[0]
         
         if selection:
             layer.selectByExpression(result)
-            
-            self.iface.messageBar().pushMessage("Selection done!", result, level=Qgis.Success, duration=10)
+            self.iface.messageBar().pushMessage("Selection done!", result, level=Qgis.Success, duration=5)
         else:
-        
-            self.iface.messageBar().pushMessage("Filter done!", result, level=Qgis.Success, duration=10)
-            
             layer.setSubsetString(result)
+            self.iface.messageBar().pushMessage("Filter done!", result, level=Qgis.Success, duration=5)
             
             
             
@@ -303,8 +300,60 @@ class EasyFilter:
             layer.selectByExpression('')
         else:
             layer.setSubsetString('')
+            
+    def select_features_with_duplicates(self, reverse: bool = False, filter: bool = False) -> None:
+    
+        """
+        Selects features with duplicates in the reference field
+        :param layer_name: name of the layer
+        :param reference_field: name of the field to check e.g. id, fid etc.
         
+        base on:
+        https://gis.stackexchange.com/a/446561/244399
+        """
+    
+        if not self.check_lists():
+            return
+    
+        # warstwa z listy
+        layers = QgsProject.instance().mapLayersByName(self.dockwidget.listWidget.selectedItems()[0].text())
+        layer = layers[0]
         
+        if filter: layer.setSubsetString('')
+        
+        # pole z listy
+        reference_field = self.dockwidget.listWidget_2.selectedItems()[0].text()
+        
+        # lista wszystkich wartości pola referencyjnego 
+        all_values = layer.aggregate(aggregate=QgsAggregateCalculator.ArrayAggregate, fieldOrExpression=reference_field)[0]
+
+        if reverse:
+            # lista nieduplikatów {wartość: ilość dupli}
+            dict_with_values = {value : all_values.count(value) for value in all_values if all_values.count(value) == 1 }
+        else:
+            # lista duplikatów {wartość: ilość dupli}
+            dict_with_values = {value : all_values.count(value) for value in all_values if all_values.count(value) > 1 }
+        
+        # tupl z kluczy dicta
+        values_to_select = tuple([*dict_with_values])
+        
+        if len(values_to_select) == 0:
+            self.iface.messageBar().pushMessage("Can't Select/Filter", "There is no value to select/filter.", level=Qgis.Success, duration=5)
+            return
+        
+        # Selekcja
+        result = f'"{reference_field}" in {values_to_select}'
+        
+        if result.endswith(',)'):
+            result = result[0:-2] + ')'
+        
+        if filter:
+            layer.setSubsetString(result)
+            self.iface.messageBar().pushMessage("Filter done!", result, level=Qgis.Success, duration=5)
+        
+        else:
+            layer.selectByExpression(result)
+            self.iface.messageBar().pushMessage("Selection done!", result, level=Qgis.Success, duration=5)
         
 
     def run(self):
@@ -330,6 +379,14 @@ class EasyFilter:
                 self.dockwidget.pushButton_Clear.clicked.connect(lambda: self.clear_selection_filter(False))
                 
                 self.dockwidget.pushButton_Refresh.clicked.connect(lambda: self.load_table())
+                self.dockwidget.pushButton_Duplicates.clicked.connect(lambda: self.select_features_with_duplicates())
+                self.dockwidget.pushButton_nonDuplicates.clicked.connect(lambda: self.select_features_with_duplicates(True))
+                
+                self.dockwidget.pushButton_FDuplicates.clicked.connect(lambda: self.select_features_with_duplicates(False, True))
+                self.dockwidget.pushButton_nonFDuplicates.clicked.connect(lambda: self.select_features_with_duplicates(True, True))
+                
+                self.dockwidget.pushButton_TE_clear.clicked.connect(lambda: self.dockwidget.textEdit.setPlainText(''))
+                
                 self.dockwidget.listWidget.itemSelectionChanged.connect(lambda: self.load_field_table())
                 
             self.load_table()
