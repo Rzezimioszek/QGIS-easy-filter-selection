@@ -9,7 +9,7 @@
         begin                : 2024-10-03
         git sha              : $Format:%H$
         copyright            : (C) 2024 by Łukasz Świątek
-        email                : lukasz.swiatek1996@mial.com
+        email                : lukasz.swiatek1996@gmial.com
  ***************************************************************************/
 
 /***************************************************************************
@@ -24,7 +24,7 @@
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
-from qgis.core import QgsProject, Qgis, QgsVectorFileWriter, QgsAggregateCalculator
+from qgis.core import QgsProject, Qgis, QgsVectorFileWriter, QgsAggregateCalculator, QgsMapLayer
 # Initialize Qt resources from file resources.py
 from .resources import *
 
@@ -210,12 +210,12 @@ class EasyFilter:
     #--------------------------------------------------------------------------
     
     def load_table(self):
-        
-        itemLabels = [layer.name() for layer in self.iface.mapCanvas().layers()]
+    
         self.dockwidget.listWidget.clear()
         
-        for item in itemLabels:
-            self.dockwidget.listWidget.addItem(item);
+        for l in QgsProject.instance().mapLayers().values():
+            if l.type() == QgsMapLayer.VectorLayer:
+                self.dockwidget.listWidget.addItem(l.name());
             
             
     def load_field_table(self):
@@ -397,5 +397,5 @@ class EasyFilter:
 
             # show the dockwidget
             # TODO: fix to allow choice of dock location
-            self.iface.addDockWidget(Qt.LeftDockWidgetArea, self.dockwidget)
+            self.iface.addDockWidget(Qt.RightDockWidgetArea, self.dockwidget)
             self.dockwidget.show()

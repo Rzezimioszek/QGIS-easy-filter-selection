@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>381</width>
-    <height>403</height>
+    <height>422</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -261,6 +261,16 @@
        </layout>
       </item>
      </layout>
+    </item>
+    <item>
+     <widget class="QLabel" name="label_4">
+      <property name="text">
+       <string>ŁŚ 2024</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+      </property>
+     </widget>
     </item>
    </layout>
   </widget>
