@@ -5,8 +5,8 @@
 [general]
 name=Easy Filter and Selection
 qgisMinimumVersion=3.0
-description=Plugin gives easy selecting and filter feature for users that don't want writes comlicated SQL for simple problem solution.
-version=1.2
+description=Plugin gives easy selecting and filter feature for users that don't want writes comlicated SQL for simple problem solution. Now supports advanced selection modes and file loading.
+version=1.3
 author=Łukasz Świątek
 email=lukasz.swiatek1996@gmail.com
 
@@ -26,6 +26,12 @@ repository=https://github.com/Rzezimioszek/QGIS-easy-filter-selection
 hasProcessingProvider=no
 # Uncomment the following line and add your changelog:
 changelog=
+	* 1.3
+		- Added search bars for Layer and Field lists
+		- Added "Load from File" button (txt/csv support)
+		- Added Selection Modes: New, Add to, Remove from, Intersect
+		- Auto-detection of numeric fields
+		- Improved whitespace handling and statistics reporting
 	* 1.2
 		- Layer list load now all layer vector not only visible or raster type
 		- Dockwidget now dock default on right

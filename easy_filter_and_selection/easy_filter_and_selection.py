@@ -21,10 +21,11 @@
  *                                                                         *
  ***************************************************************************/
 """
-from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt
+from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt, QVariant
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction
-from qgis.core import QgsProject, Qgis, QgsVectorFileWriter, QgsAggregateCalculator, QgsMapLayer
+from qgis.PyQt.QtWidgets import QAction, QFileDialog
+from qgis.core import QgsProject, Qgis, QgsVectorFileWriter, QgsAggregateCalculator, QgsMapLayer, QgsFeatureRequest
+import csv
 # Initialize Qt resources from file resources.py
 from .resources import *
 
@@ -210,46 +211,76 @@ class EasyFilter:
     #--------------------------------------------------------------------------
     
     def load_table(self):
-    
         self.dockwidget.listWidget.clear()
+        search_text = self.dockwidget.lineEdit_layer_search.text().lower()
         
         for l in QgsProject.instance().mapLayers().values():
             if l.type() == QgsMapLayer.VectorLayer:
-                self.dockwidget.listWidget.addItem(l.name());
-            
+                if search_text in l.name().lower():
+                    self.dockwidget.listWidget.addItem(l.name())
             
     def load_field_table(self):
-    
         if self.dockwidget.listWidget.selectedItems():
-
             layers = QgsProject.instance().mapLayersByName(self.dockwidget.listWidget.selectedItems()[0].text())
             layer = layers[0]
+            search_text = self.dockwidget.lineEdit_field_search.text().lower()
                 
-            itemLabels = [field.name() for field in layer.fields()]
             self.dockwidget.listWidget_2.clear()
             
-            for item in itemLabels:
-                self.dockwidget.listWidget_2.addItem(item);
+            for field in layer.fields():
+                if search_text in field.name().lower():
+                    self.dockwidget.listWidget_2.addItem(field.name())
         else:
             self.dockwidget.listWidget_2.clear()
+
+    def on_field_selection_changed(self):
+        """Auto-detects if the field is numeric and updates checkbox."""
+        if not self.dockwidget.listWidget_2.selectedItems():
+            return
+
+        if not self.check_lists(silent=True):
+            return
+
+        layers = QgsProject.instance().mapLayersByName(self.dockwidget.listWidget.selectedItems()[0].text())
+        layer = layers[0]
+        field_name = self.dockwidget.listWidget_2.selectedItems()[0].text()
         
-    def check_lists(self):
-    
+        idx = layer.fields().indexOf(field_name)
+        if idx != -1:
+            field = layer.fields()[idx]
+            is_numeric = field.isNumeric()
+            self.dockwidget.checkBoxNumeric.setChecked(is_numeric)
+
+    def load_from_file(self):
+        """Loads values from a text or CSV file into the text area."""
+        filename, _ = QFileDialog.getOpenFileName(
+            self.dockwidget, "Select File", "", "Text Files (*.txt);;CSV Files (*.csv);;All Files (*)"
+        )
+        
+        if filename:
+            try:
+                with open(filename, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                    self.dockwidget.textEdit.setPlainText(content)
+                    self.iface.messageBar().pushMessage("File Loaded", f"Loaded content from {filename}", level=Qgis.Success)
+            except Exception as e:
+                self.iface.messageBar().pushMessage("Error", f"Failed to load file: {e}", level=Qgis.Critical)
+
+    def check_lists(self, silent=False):
         if len(self.dockwidget.listWidget.selectedItems()) < 1:
-        
-            self.iface.messageBar().pushMessage("Can't be done:", "Select layer first.", level=Qgis.Warning, duration=30)
+            if not silent:
+                self.iface.messageBar().pushMessage("Can't be done:", "Select layer first.", level=Qgis.Warning, duration=30)
             return False
             
         if len(self.dockwidget.listWidget_2.selectedItems()) < 1:
-        
-            self.iface.messageBar().pushMessage("Can't be done:", "Select field first.", level=Qgis.Warning, duration=30)
+            if not silent:
+                self.iface.messageBar().pushMessage("Can't be done:", "Select field first.", level=Qgis.Warning, duration=30)
             return False
             
         return True
     
             
     def sql_from_textEdit(self, selection=True, reverse=False):
-    
         value = self.dockwidget.textEdit.toPlainText().strip()
         
         if value == "":
@@ -259,47 +290,64 @@ class EasyFilter:
         if not self.check_lists():
             return
          
-        
         field = self.dockwidget.listWidget_2.selectedItems()[0].text()
-        splt = value.split("\n")
+        # Handle Windows/Unix line endings, strip whitespace, remove empty lines
+        splt = [s.strip() for s in value.replace('\r\n', '\n').split('\n') if s.strip()]
         
-        if reverse:
-            result = f'"{field}" not in ('
-        else:
-            result = f'"{field}" in ('
-            
+        if not splt:
+            self.iface.messageBar().pushMessage("Warning", "No valid values found to process.", level=Qgis.Warning)
+            return
+
         numeric_field = self.dockwidget.checkBoxNumeric.isChecked() 
 
         if numeric_field:
-            for s in splt:
-                result = result + f"{s}, "
+            values_str = ", ".join(splt)
         else:
-            for s in splt:
-                result = result + f"'{s}', "
+            # Escape single quotes and wrap in quotes
+            values_str = ", ".join([f"'{s.replace('\'', '\'\'')}'" for s in splt])
             
-        result = result[:-2] + ")"
-        
+        if reverse:
+            result = f'"{field}" NOT IN ({values_str})'
+        else:
+            result = f'"{field}" IN ({values_str})'
+            
         layers = QgsProject.instance().mapLayersByName(self.dockwidget.listWidget.selectedItems()[0].text())
         layer = layers[0]
         
         if selection:
-            layer.selectByExpression(result)
-            self.iface.messageBar().pushMessage("Selection done!", result, level=Qgis.Success, duration=5)
+            # Determine selection behavior based on combo box
+            mode_idx = self.dockwidget.comboBox_selection_mode.currentIndex()
+            behavior = Qgis.SelectBehavior.SetSelection
+            if mode_idx == 1: 
+                behavior = Qgis.SelectBehavior.AddToSelection
+            elif mode_idx == 2: 
+                behavior = Qgis.SelectBehavior.RemoveFromSelection
+            elif mode_idx == 3: 
+                behavior = Qgis.SelectBehavior.IntersectSelection
+
+            layer.selectByExpression(result, behavior)
+            
+            count = layer.selectedFeatureCount()
+            self.iface.messageBar().pushMessage("Selection done!", f"Total selected features: {count}", level=Qgis.Success, duration=5)
         else:
             layer.setSubsetString(result)
-            self.iface.messageBar().pushMessage("Filter done!", result, level=Qgis.Success, duration=5)
-            
-            
+            feature_count = layer.featureCount()
+            self.iface.messageBar().pushMessage("Filter done!", f"Filter active. Visible features: {feature_count}", level=Qgis.Success, duration=5)
             
     def clear_selection_filter(self, selection=True):
-    
+        if not self.dockwidget.listWidget.selectedItems():
+             self.iface.messageBar().pushMessage("Warning", "Select a layer first.", level=Qgis.Warning)
+             return
+
         layers = QgsProject.instance().mapLayersByName(self.dockwidget.listWidget.selectedItems()[0].text())
+        if not layers: return
         layer = layers[0]
         
         if selection:
-            layer.selectByExpression('')
+            layer.removeSelection()
         else:
             layer.setSubsetString('')
+            self.iface.messageBar().pushMessage("Info", "Filter cleared.", level=Qgis.Success)
             
     def select_features_with_duplicates(self, reverse: bool = False, filter: bool = False) -> None:
     
@@ -370,6 +418,14 @@ class EasyFilter:
             if self.dockwidget == None:
                 # Create the dockwidget (after translation) and keep reference
                 self.dockwidget = EasyFilterDockWidget()
+                
+                # --- New UX Connections ---
+                self.dockwidget.lineEdit_layer_search.textChanged.connect(self.load_table)
+                self.dockwidget.lineEdit_field_search.textChanged.connect(self.load_field_table)
+                self.dockwidget.pushButton_LoadFile.clicked.connect(self.load_from_file)
+                self.dockwidget.listWidget_2.itemSelectionChanged.connect(self.on_field_selection_changed)
+
+                # --- Existing Connections ---
                 self.dockwidget.pushButton.clicked.connect(lambda: self.sql_from_textEdit(True))
                 self.dockwidget.pushButton_RSelect.clicked.connect(lambda: self.sql_from_textEdit(True, True))
                 self.dockwidget.pushButton_Unselect.clicked.connect(lambda: self.clear_selection_filter(True))

@@ -26,6 +26,7 @@ import os
 
 from qgis.PyQt import QtGui, QtWidgets, uic
 from qgis.PyQt.QtCore import pyqtSignal
+from qgis.PyQt.QtWidgets import QLineEdit, QComboBox, QPushButton, QHBoxLayout, QSizePolicy, QSpacerItem
 
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'easy_filter_and_selection_dockwidget_base.ui'))
@@ -44,6 +45,33 @@ class EasyFilterDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         # http://doc.qt.io/qt-5/designer-using-a-ui-file.html
         # #widgets-and-dialogs-with-auto-connect
         self.setupUi(self)
+
+        # --- UX Improvements: Search Bars ---
+        self.lineEdit_layer_search = QLineEdit(self)
+        self.lineEdit_layer_search.setPlaceholderText("Search layer...")
+        # Insert after label (index 1)
+        self.verticalLayout_2.insertWidget(1, self.lineEdit_layer_search)
+
+        self.lineEdit_field_search = QLineEdit(self)
+        self.lineEdit_field_search.setPlaceholderText("Search field...")
+        # Insert after label (index 1)
+        self.verticalLayout_5.insertWidget(1, self.lineEdit_field_search)
+
+        # --- Features: Selection Modes & File Import ---
+        self.comboBox_selection_mode = QComboBox(self)
+        self.comboBox_selection_mode.addItems([
+            "New selection", 
+            "Add to current", 
+            "Remove from current", 
+            "Intersect with current"
+        ])
+        
+        self.pushButton_LoadFile = QPushButton("Load from file (txt/csv/xlsx)", self)
+
+        # Insert into verticalLayout_4 (Select/Reverse Select layout)
+        # We put them at the top of this layout
+        self.verticalLayout_4.insertWidget(0, self.comboBox_selection_mode)
+        self.verticalLayout_4.insertWidget(1, self.pushButton_LoadFile)
 
     def closeEvent(self, event):
         self.closingPlugin.emit()

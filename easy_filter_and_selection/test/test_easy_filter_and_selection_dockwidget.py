@@ -34,6 +34,18 @@ class EasyFilterDockWidgetTest(unittest.TestCase):
         """Runs after each test."""
         self.dockwidget = None
 
+    def test_dockwidget_ui_elements(self):
+        """Test new UI elements exist and are configured correctly."""
+        # Check for new widgets
+        self.assertTrue(hasattr(self.dockwidget, 'lineEdit_layer_search'), "Layer search bar missing")
+        self.assertTrue(hasattr(self.dockwidget, 'lineEdit_field_search'), "Field search bar missing")
+        self.assertTrue(hasattr(self.dockwidget, 'comboBox_selection_mode'), "Selection mode combo box missing")
+        self.assertTrue(hasattr(self.dockwidget, 'pushButton_LoadFile'), "Load file button missing")
+        
+        # Check Combo Box defaults
+        self.assertEqual(self.dockwidget.comboBox_selection_mode.count(), 4, "Combo box should have 4 items")
+        self.assertEqual(self.dockwidget.comboBox_selection_mode.itemText(0), "New selection")
+
     def test_dockwidget_ok(self):
         """Test we can click OK."""
         pass
